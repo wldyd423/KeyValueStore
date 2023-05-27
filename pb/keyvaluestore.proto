@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option go_package = "wldyd423.com/keyvaluestore";
+
+package keyvaluestore;
+
+service Storage{
+    rpc SayHello(HelloRequest) returns (HelloResponse);
+    rpc SayGoodbye(GoodbyeRequest) returns (GoodbyeResponse);
+}
+
+message HelloRequest{
+    string name = 1;
+}
+
+message HelloResponse{
+    string message = 1;
+}
+
+message GoodbyeRequest{
+    string name = 1;
+}
+
+message GoodbyeResponse{
+    string message = 1;
+}
+
+
