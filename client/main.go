@@ -4,9 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"time"
+
 
 	"google.golang.org/grpc"
-	pb "wldyd423.com/keyvaluestore"
+	"google.golang.org/grpc/credentials/insecure"
+	pb "github.com/wldyd423/keyvaluestorev1/pb"
 )
 
 const (
@@ -19,8 +23,9 @@ var (
 )
 
 func main() {
+	fmt.Println("Hello, World!")
 	flag.Parse()
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insercure.NewCredentials()))
+	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
 	}

@@ -5,9 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"log"
 
 	"google.golang.org/grpc"
-	pb "wldyd423.com/keyvaluestore"
+	pb "github.com/wldyd423/keyvaluestorev1/pb"
 )
 
 var (
@@ -18,7 +19,7 @@ type server struct {
 	pb.UnimplementedStorageServer
 }
 
-func (s* server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+func (s* server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloResponse, error) {
 	log.Printf("Received : %v", in.Name)
 	return &pb.HelloResponse{Message : "Hello " + in.Name}, nil
 }

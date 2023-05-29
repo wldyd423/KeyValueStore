@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "wldyd423.com/keyvaluestore";
+option go_package = "github.com/wldyd423/keyvaluestorev1/pb";
 
 package keyvaluestore;
 

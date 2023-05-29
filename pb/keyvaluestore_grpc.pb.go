@@ -4,7 +4,7 @@
 // - protoc             v3.6.1
 // source: pb/keyvaluestore.proto
 
-package keyvaluestore
+package pb
 
 import (
 	context "context"
