@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Storage_SayHello_FullMethodName   = "/keyvaluestore.Storage/SayHello"
 	Storage_SayGoodbye_FullMethodName = "/keyvaluestore.Storage/SayGoodbye"
+	Storage_Get_FullMethodName        = "/keyvaluestore.Storage/Get"
 )
 
 // StorageClient is the client API for Storage service.
@@ -29,6 +30,7 @@ const (
 type StorageClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	SayGoodbye(ctx context.Context, in *GoodbyeRequest, opts ...grpc.CallOption) (*GoodbyeResponse, error)
+	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
 }
 
 type storageClient struct {
@@ -57,12 +59,22 @@ func (c *storageClient) SayGoodbye(ctx context.Context, in *GoodbyeRequest, opts
 	return out, nil
 }
 
+func (c *storageClient) Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error) {
+	out := new(Value)
+	err := c.cc.Invoke(ctx, Storage_Get_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StorageServer is the server API for Storage service.
 // All implementations must embed UnimplementedStorageServer
 // for forward compatibility
 type StorageServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	SayGoodbye(context.Context, *GoodbyeRequest) (*GoodbyeResponse, error)
+	Get(context.Context, *Key) (*Value, error)
 	mustEmbedUnimplementedStorageServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedStorageServer) SayHello(context.Context, *HelloRequest) (*Hel
 }
 func (UnimplementedStorageServer) SayGoodbye(context.Context, *GoodbyeRequest) (*GoodbyeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayGoodbye not implemented")
+}
+func (UnimplementedStorageServer) Get(context.Context, *Key) (*Value, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedStorageServer) mustEmbedUnimplementedStorageServer() {}
 
@@ -125,6 +140,24 @@ func _Storage_SayGoodbye_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Storage_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Key)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).Get(ctx, req.(*Key))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Storage_ServiceDesc is the grpc.ServiceDesc for Storage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Storage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SayGoodbye",
 			Handler:    _Storage_SayGoodbye_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _Storage_Get_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
