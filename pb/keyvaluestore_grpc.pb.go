@@ -22,6 +22,11 @@ const (
 	Storage_SayHello_FullMethodName   = "/keyvaluestore.Storage/SayHello"
 	Storage_SayGoodbye_FullMethodName = "/keyvaluestore.Storage/SayGoodbye"
 	Storage_Get_FullMethodName        = "/keyvaluestore.Storage/Get"
+	Storage_Set_FullMethodName        = "/keyvaluestore.Storage/Set"
+	Storage_Delete_FullMethodName     = "/keyvaluestore.Storage/Delete"
+	Storage_GetAll_FullMethodName     = "/keyvaluestore.Storage/GetAll"
+	Storage_Heartbeat_FullMethodName  = "/keyvaluestore.Storage/Heartbeat"
+	Storage_Election_FullMethodName   = "/keyvaluestore.Storage/Election"
 )
 
 // StorageClient is the client API for Storage service.
@@ -31,6 +36,11 @@ type StorageClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	SayGoodbye(ctx context.Context, in *GoodbyeRequest, opts ...grpc.CallOption) (*GoodbyeResponse, error)
 	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
+	Set(ctx context.Context, in *KeyValuePair, opts ...grpc.CallOption) (*Value, error)
+	Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
+	GetAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyValuePairList, error)
+	Heartbeat(ctx context.Context, in *KeyValuePairList, opts ...grpc.CallOption) (*Empty, error)
+	Election(ctx context.Context, in *RequestforVote, opts ...grpc.CallOption) (*Vote, error)
 }
 
 type storageClient struct {
@@ -68,6 +78,51 @@ func (c *storageClient) Get(ctx context.Context, in *Key, opts ...grpc.CallOptio
 	return out, nil
 }
 
+func (c *storageClient) Set(ctx context.Context, in *KeyValuePair, opts ...grpc.CallOption) (*Value, error) {
+	out := new(Value)
+	err := c.cc.Invoke(ctx, Storage_Set_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error) {
+	out := new(Value)
+	err := c.cc.Invoke(ctx, Storage_Delete_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) GetAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyValuePairList, error) {
+	out := new(KeyValuePairList)
+	err := c.cc.Invoke(ctx, Storage_GetAll_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) Heartbeat(ctx context.Context, in *KeyValuePairList, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Storage_Heartbeat_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) Election(ctx context.Context, in *RequestforVote, opts ...grpc.CallOption) (*Vote, error) {
+	out := new(Vote)
+	err := c.cc.Invoke(ctx, Storage_Election_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StorageServer is the server API for Storage service.
 // All implementations must embed UnimplementedStorageServer
 // for forward compatibility
@@ -75,6 +130,11 @@ type StorageServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	SayGoodbye(context.Context, *GoodbyeRequest) (*GoodbyeResponse, error)
 	Get(context.Context, *Key) (*Value, error)
+	Set(context.Context, *KeyValuePair) (*Value, error)
+	Delete(context.Context, *Key) (*Value, error)
+	GetAll(context.Context, *Empty) (*KeyValuePairList, error)
+	Heartbeat(context.Context, *KeyValuePairList) (*Empty, error)
+	Election(context.Context, *RequestforVote) (*Vote, error)
 	mustEmbedUnimplementedStorageServer()
 }
 
@@ -90,6 +150,21 @@ func (UnimplementedStorageServer) SayGoodbye(context.Context, *GoodbyeRequest) (
 }
 func (UnimplementedStorageServer) Get(context.Context, *Key) (*Value, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedStorageServer) Set(context.Context, *KeyValuePair) (*Value, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
+}
+func (UnimplementedStorageServer) Delete(context.Context, *Key) (*Value, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedStorageServer) GetAll(context.Context, *Empty) (*KeyValuePairList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+}
+func (UnimplementedStorageServer) Heartbeat(context.Context, *KeyValuePairList) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
+}
+func (UnimplementedStorageServer) Election(context.Context, *RequestforVote) (*Vote, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Election not implemented")
 }
 func (UnimplementedStorageServer) mustEmbedUnimplementedStorageServer() {}
 
@@ -158,6 +233,96 @@ func _Storage_Get_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Storage_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KeyValuePair)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).Set(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_Set_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).Set(ctx, req.(*KeyValuePair))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Key)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).Delete(ctx, req.(*Key))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).GetAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_GetAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).GetAll(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KeyValuePairList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_Heartbeat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).Heartbeat(ctx, req.(*KeyValuePairList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_Election_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestforVote)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).Election(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_Election_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).Election(ctx, req.(*RequestforVote))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Storage_ServiceDesc is the grpc.ServiceDesc for Storage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +341,26 @@ var Storage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _Storage_Get_Handler,
+		},
+		{
+			MethodName: "Set",
+			Handler:    _Storage_Set_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Storage_Delete_Handler,
+		},
+		{
+			MethodName: "GetAll",
+			Handler:    _Storage_GetAll_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _Storage_Heartbeat_Handler,
+		},
+		{
+			MethodName: "Election",
+			Handler:    _Storage_Election_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

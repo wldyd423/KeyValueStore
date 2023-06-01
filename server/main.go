@@ -1,4 +1,13 @@
 package main
+//TODO : When candidate dies during election (we need to start timer after vote) 
+// If no leader elected in that time period we regain the ability to vote.
+// If candidate fails to be elected he tries again after a random time period.
+// If candidate receives heartbeat from leader, it steps down.
+
+// Leader heartbeat holds keyvaluepair of leader. followers merge their map with leader's map.
+// Any put request is sent to leader.
+
+
 
 import (
 	"context"
@@ -7,6 +16,7 @@ import (
 	"net"
 	"log"
 	"time"
+	"math/rand"
 
 	"google.golang.org/grpc"
 	pb "github.com/wldyd423/keyvaluestorev1/pb"
@@ -14,24 +24,19 @@ import (
 
 var (
 	port = flag.Int("port", 50051, "The server port")
-	portList = []int{50051, 50052}
+	portList = []int{50051, 50052, 50053, 50054}
 	amLeader = flag.Bool("leader", false, "Leader or not")
+	amCandidate = flag.Bool("candidate", false, "Candidate or not")
 	m = make(map[string]string)
+	bomb = rand.Intn(15) + 7 //if this value is 0. The server will assume leader is dead.
+	vote = flag.Bool("vote", false, "Has made vote")
 )
 
 type server struct {
 	pb.UnimplementedStorageServer
 }
 
-func (s* server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloResponse, error) {
-	log.Printf("Received : %v", in.Name)
-	return &pb.HelloResponse{Message : "Hello " + in.Name}, nil
-}
 
-func (s *server) SayGoodbye(ctx context.Context, in *pb.GoodbyeRequest) (*pb.GoodbyeResponse, error) {
-	log.Printf("Received : %v", in.Name)
-	return &pb.GoodbyeResponse{Message : "Goodbye " + in.Name}, nil
-}
 
 func (s *server) Get(ctx context.Context, in *pb.Key)(*pb.Value, error){
 	log.Printf("Received : %v", in.Key)
@@ -39,60 +44,132 @@ func (s *server) Get(ctx context.Context, in *pb.Key)(*pb.Value, error){
 	return &pb.Value{Value : m[in.Key]}, nil
 }
 
-func heartbeat(port int){
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	c := pb.NewStorageClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name : "heartbeat"})
-	if err != nil {
-		return
-	}
-	if err == nil{
-		log.Printf("Greeting : %s", r.Message)
-	}
-
+func (s *server) Set(ctx context.Context, in *pb.KeyValuePair)(*pb.Value, error){
+	log.Printf("Received : %v", in.Key)
+	log.Printf("Value : %v", in.Value)
+	m[in.Key] = in.Value
+	return &pb.Value{Value : in.Value}, nil
 }
 
-func test(port int){
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
-	if err != nil {
-		return
+func (s *server) Delete(ctx context.Context, in *pb.Key)(*pb.Value, error){
+	log.Printf("Received : %v", in.Key)
+	log.Printf("Value : %v", m[in.Key])
+	ret := m[in.Key]
+	delete(m, in.Key)
+	return &pb.Value{Value : ret}, nil
+}
+
+func (s *server) GetAll(ctx context.Context, in *pb.Empty)(*pb.KeyValuePairList, error){
+	log.Printf("Received : GetAll")
+	var list []*pb.KeyValuePair
+	for k, v := range m{
+		list = append(list, &pb.KeyValuePair{Key : k, Value : v})
 	}
-	defer conn.Close()
+	return &pb.KeyValuePairList{KeyValuePair : list}, nil
+}
 
-	c := pb.NewStorageClient(conn)
+func (s *server) Heartbeat(ctx context.Context, in *pb.KeyValuePairList)(*pb.Empty, error){
+	*vote = false
+	*amCandidate = false
+	log.Printf("Received : Heartbeat")
+	bomb = rand.Intn(10) + 7
+	return &pb.Empty{}, nil
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	r, err := c.SayGoodbye(ctx, &pb.GoodbyeRequest{Name : "test"})
-	if err != nil {
-		return
+func (s *server) Election(ctx context.Context, in *pb.RequestforVote)(*pb.Vote, error){
+	log.Printf("Received : Election")
+	if *amCandidate == false && *vote == false{
+		*vote = true
+		bomb = rand.Intn(10) + 7
+		*amCandidate = false
+		return &pb.Vote{VoteGranted : true}, nil
 	}
-	if err == nil{
-		log.Printf("Greeting : %s", r.Message)
+	return &pb.Vote{VoteGranted : false}, nil
+}
+
+func heartbeat_candidate(port int){
+	count := 0
+	for _, p := range portList{
+		if p == port{
+			continue
+		}
+		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", p), grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+		c := pb.NewStorageClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		r, err := c.Election(ctx, &pb.RequestforVote{})
+		if err != nil {
+			log.Fatalf("could not greet: %v", err)
+		}
+		if r.VoteGranted == true{
+			count += 1
+		}else if r.VoteGranted == false{
+			count -= 1
+		}
+	}
+	if count > 0{
+		fmt.Println("I am leader")
+		*amLeader = true
+		*amCandidate = false
+	}
+}
+
+func heartbeat_leader(port int){
+	for _, p := range portList{
+		if p == port{
+			continue
+		}
+		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", p), grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+		c := pb.NewStorageClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		var list []*pb.KeyValuePair
+		for k, v := range m{
+			list = append(list, &pb.KeyValuePair{Key : k, Value : v})
+		}
+		c.Heartbeat(ctx, &pb.KeyValuePairList{KeyValuePair : list})
+	}
+	
+}
+
+func tick(){
+	ticker := time.NewTicker(1 * time.Second)
+	for{
+		select{
+		// case *amLeader == true:
+		// 	continue
+		case <- ticker.C:
+			if *amLeader == true{
+				continue
+			}else{
+				bomb -= 1
+				fmt.Println("Ticked bomb. Remaining : ", bomb)
+				if bomb < 0{
+					fmt.Println("Leader is dead")
+					fmt.Println("I am candidate")
+					*amCandidate = true
+				}
+			}
+		}
 	}
 }
 
 func sendHeartbeat(){ 
-	//Executed By Leader
-	// Send Heartbeat to other nodes
 	for{
-		for _, p := range portList{
-			if p != *port{
-				heartbeat(p)
-				test(p)
-			}
+		if *amLeader == true{
+			heartbeat_leader(*port)
+		}else if *amCandidate == true{
+			heartbeat_candidate(*port)
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -108,10 +185,9 @@ func main() {
 
 	defer lis.Close()
 	s := grpc.NewServer()
-	
-	if *amLeader{
-		go sendHeartbeat()
-	}
+
+	go tick()
+	go sendHeartbeat()
 
 	pb.RegisterStorageServer(s, &server{})
 	if err := s.Serve(lis); err != nil {

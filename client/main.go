@@ -29,7 +29,7 @@ var (
 // }
 
 func main() {
-	fmt.Println("Hello, World!")
+	fmt.Println("Usage : get [key], put [key] [value], delete [key], exit")
 	flag.Parse()
 	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -53,17 +53,33 @@ func main() {
 		fmt.Print("$ ")
 		text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		text = strings.Replace(text, "\n", "", -1)
+		word := strings.Fields(text)
 		
-
-		if strings.Compare(strings.SplitAfter(text," ")[0], "get ") == 0{
-			r, err := c.Get(ctx, &pb.Key{Key : strings.SplitAfter(text," ")[1]})
+		if strings.Compare(word[0], "get") == 0{
+			r, err := c.Get(ctx, &pb.Key{Key : word[1]})
+			if err != nil {
+				log.Fatalf("could not get : %v", err)
+			}
+			log.Printf("Received: %s", r.Value)
+		}else if strings.Compare(word[0], "put") == 0{
+			r, err := c.Set(ctx, &pb.KeyValuePair{Key : word[1], Value : word[2]})
+			if err != nil {
+				log.Fatalf("could not put : %v", err)
+			}
+			log.Printf("Received: %s", r.Value)
+		}else if strings.Compare(word[0], "delete") == 0{
+			r, err := c.Delete(ctx, &pb.Key{Key : word[1]})
 			if err != nil {
 				log.Fatalf("could not greet : %v", err)
 			}
 			log.Printf("Received: %s", r.Value)
-		}else if strings.Compare(strings.SplitAfter(text," ")[0], "put ") == 0{
-		}else if strings.Compare(strings.SplitAfter(text," ")[0], "delete ") == 0{
-		}else if strings.Compare(strings.SplitAfter(text," ")[0], "exit") == 0{
+		}else if strings.Compare(word[0], "getall") == 0{
+			r, err := c.GetAll(ctx, &pb.Empty{})
+			if err != nil {
+				log.Fatalf("could not greet : %v", err)
+			}
+			log.Printf("Received: %s", r.KeyValuePair)
+		}else if strings.Compare(word[0], "exit") == 0{
 			break
 		}
 
