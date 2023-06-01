@@ -73,6 +73,9 @@ func (s *server) Heartbeat(ctx context.Context, in *pb.KeyValuePairList)(*pb.Emp
 	*amCandidate = false
 	log.Printf("Received : Heartbeat")
 	bomb = rand.Intn(10) + 7
+	for _, kv := range in.KeyValuePair{
+		m[kv.Key] = kv.Value // We assume only leader adds new values
+	}
 	return &pb.Empty{}, nil
 }
 
