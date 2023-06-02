@@ -27,6 +27,8 @@ var (
 	bomb        = rand.Intn(15) + 7 //if this value is 0. The server will assume leader is dead.
 	vote        = flag.Bool("vote", false, "Has made vote")
 	leaderPort  = -1
+
+	centralServerPort = flag.Int("centralServerPort", 50050, "Central Server Port")
 )
 
 type server struct {
@@ -202,8 +204,23 @@ func sendHeartbeat() {
 	}
 }
 
-func main() {
+func register(port int) {
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", *centralServerPort), grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewStorageClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := c.RegisterPort(ctx, &pb.Port{Port: int32(port)})
+	if err != nil {
+		log.Fatalf("could not register: %v", err)
+	}
+	log.Printf("Current Port List: %v", r.Ports)
+}
 
+func main() {
 	m["ihate"] = "go"
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
@@ -213,7 +230,7 @@ func main() {
 
 	defer lis.Close()
 	s := grpc.NewServer()
-
+	go register(*port)
 	go tick()
 	go sendHeartbeat()
 
