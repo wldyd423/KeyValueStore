@@ -27,6 +27,7 @@ message Empty{}
 
 message KeyValuePairList{
     repeated KeyValuePair keyValuePair = 1;
+    int32 leaderPort = 2;
 }
 
 message KeyValuePair{
