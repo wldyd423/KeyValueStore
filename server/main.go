@@ -5,15 +5,12 @@ package main
 // If candidate fails to be elected he tries again after a random time period.
 // If candidate receives heartbeat from leader, it steps down.
 
-<<<<<<< HEAD
 // Leader heartbeat holds keyvaluepair of leader. followers merge their map with leader's map.
 // Any put request is sent to leader.
 
 //TODO(MAYBE): SCALE UP PORTLIST METHOD currently very very crude
 
 
-=======
->>>>>>> 91cecc4d10ef3d2b53f691bb019f528c52f270ee
 import (
 	"context"
 	"flag"
@@ -213,21 +210,21 @@ func sendHeartbeat() {
 	}
 }
 
-func register(port int) {
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", *centralServerPort), grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewStorageClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.RegisterPort(ctx, &pb.Port{Port: int32(port)})
-	if err != nil {
-		log.Fatalf("could not register: %v", err)
-	}
-	log.Printf("Current Port List: %v", r.Ports)
-}
+// func register(port int) {
+// 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", *centralServerPort), grpc.WithInsecure())
+// 	if err != nil {
+// 		log.Fatalf("did not connect: %v", err)
+// 	}
+// 	defer conn.Close()
+// 	c := pb.NewStorageClient(conn)
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+// 	defer cancel()
+// 	r, err := c.RegisterPort(ctx, &pb.Port{Port: int32(port)})
+// 	if err != nil {
+// 		log.Fatalf("could not register: %v", err)
+// 	}
+// 	log.Printf("Current Port List: %v", r.Ports)
+// }
 
 func main() {
 	m["ihate"] = "go"
@@ -239,7 +236,7 @@ func main() {
 
 	defer lis.Close()
 	s := grpc.NewServer()
-	go register(*port)
+	// go register(*port)
 	go tick()
 	go sendHeartbeat()
 
