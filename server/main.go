@@ -7,6 +7,7 @@ package main
 // Leader heartbeat holds keyvaluepair of leader. followers merge their map with leader's map.
 // Any put request is sent to leader.
 
+//TODO(MAYBE): SCALE UP PORTLIST METHOD currently very very crude
 
 
 import (
