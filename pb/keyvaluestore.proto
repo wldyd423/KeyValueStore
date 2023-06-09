@@ -13,6 +13,16 @@ service Storage{
     rpc GetAll(Empty) returns (KeyValuePairList);
     rpc Heartbeat(KeyValuePairList) returns (Empty);
     rpc Election(RequestforVote) returns (Vote);
+    rpc GetPorts(Empty) returns (PortList);
+    rpc RegisterPort(Port) returns (PortList);
+}
+
+message PortList{
+    repeated int32 ports = 1;
+}
+
+message Port{
+    int32 port = 1;
 }
 
 message RequestforVote{
@@ -27,6 +37,7 @@ message Empty{}
 
 message KeyValuePairList{
     repeated KeyValuePair keyValuePair = 1;
+    int32 leaderPort = 2;
 }
 
 message KeyValuePair{
