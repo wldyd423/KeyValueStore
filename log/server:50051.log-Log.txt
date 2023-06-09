@@ -1,0 +1,38 @@
+server:50051 {"server:50051":1}
+Initialization Complete
+server:50051 {"server:50051":2}
+INFO Requesting Vote
+server:50051 {"server:50051":3, "server:50052":3}
+INFO Received Vote
+server:50051 {"server:50051":4, "server:50052":3}
+INFO Requesting Vote
+server:50051 {"server:50051":5, "server:50052":3, "server:50053":3}
+INFO Received Vote
+server:50051 {"server:50051":6, "server:50052":3, "server:50053":3}
+INFO Requesting Vote
+server:50051 {"server:50051":7, "server:50052":3, "server:50053":3, "server:50054":3}
+INFO Received Vote
+server:50051 {"server:50051":8, "server:50052":3, "server:50053":3, "server:50054":3}
+INFO Sending Heartbeat
+server:50051 {"server:50051":9, "server:50052":5, "server:50053":3, "server:50054":3}
+INFO Received Heartbeat
+server:50051 {"server:50051":10, "server:50052":5, "server:50053":3, "server:50054":3}
+INFO Sending Heartbeat
+server:50051 {"server:50051":11, "server:50052":5, "server:50053":5, "server:50054":3}
+INFO Received Heartbeat
+server:50051 {"server:50051":12, "server:50052":5, "server:50053":5, "server:50054":3}
+INFO Sending Heartbeat
+server:50051 {"server:50051":13, "server:50052":5, "server:50053":5, "server:50054":5}
+INFO Received Heartbeat
+server:50051 {"server:50051":14, "server:50052":5, "server:50053":5, "server:50054":5}
+INFO Sending Heartbeat
+server:50051 {"server:50051":15, "server:50052":7, "server:50053":5, "server:50054":5}
+INFO Received Heartbeat
+server:50051 {"server:50051":16, "server:50052":7, "server:50053":5, "server:50054":5}
+INFO Sending Heartbeat
+server:50051 {"server:50051":17, "server:50052":7, "server:50053":7, "server:50054":5}
+INFO Received Heartbeat
+server:50051 {"server:50051":18, "server:50052":7, "server:50053":7, "server:50054":5}
+INFO Sending Heartbeat
+server:50051 {"server:50051":19, "server:50052":7, "server:50053":7, "server:50054":7}
+INFO Received Heartbeat

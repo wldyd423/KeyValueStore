@@ -27,22 +27,28 @@ message Port{
 
 message RequestforVote{
     int32 candidatePort = 1;
+    bytes log = 2;
 }
 
 message Vote{
     bool voteGranted = 1;
+    bytes log = 2;
 }
 
-message Empty{}
+message Empty{
+    bytes log = 1;
+}
 
 message KeyValuePairList{
     repeated KeyValuePair keyValuePair = 1;
     int32 leaderPort = 2;
+    bytes log = 3;
 }
 
 message KeyValuePair{
     string key = 1;
     string value = 2;
+    bytes log = 3;
 }
 
 message HelloRequest{
@@ -63,8 +69,10 @@ message GoodbyeResponse{
 
 message Key{
     string key = 1;
+    bytes log = 2;
 }
 
 message Value{
     string value = 1;
+    bytes log = 2;
 }

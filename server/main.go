@@ -22,6 +22,7 @@ import (
 
 	pb "github.com/wldyd423/keyvaluestorev1/pb"
 	"google.golang.org/grpc"
+	"github.com/DistributedClocks/GoVector/govec"
 )
 
 var (
@@ -33,8 +34,9 @@ var (
 	bomb        = rand.Intn(15) + 7 //if this value is 0. The server will assume leader is dead.
 	vote        = flag.Bool("vote", false, "Has made vote")
 	leaderPort  = -1
-
 	centralServerPort = flag.Int("centralServerPort", 50050, "Central Server Port")
+	logger = govec.InitGoVector(fmt.Sprintf("server:%d", *port), fmt.Sprintf("server:%d.log", *port), govec.GetDefaultConfig())
+	LogOption = govec.GetDefaultConfig()
 )
 
 type server struct {
@@ -42,9 +44,11 @@ type server struct {
 }
 
 func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
+	logger.UnpackReceive("Received Get Request", in.Log, nil, govec.GetDefaultLogOptions())
 	log.Printf("Received : %v", in.Key)
 	log.Printf("Value : %v", m[in.Key])
-	return &pb.Value{Value: m[in.Key]}, nil
+	msg := logger.PrepareSend("Sending Value", m[in.Key], govec.GetDefaultLogOptions())
+	return &pb.Value{Value: m[in.Key], Log: msg}, nil
 }
 
 func SetToLeader(key string, value string) {
@@ -60,45 +64,53 @@ func SetToLeader(key string, value string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
-	_, err = c.Set(ctx, &pb.KeyValuePair{Key: key, Value: value})
+	msg := logger.PrepareSend("Sending Set to Leader", value, govec.GetDefaultLogOptions())
+	_, err = c.Set(ctx, &pb.KeyValuePair{Key: key, Value: value, Log: msg})
 	if err != nil {
 		log.Fatalf("could not set : %v", err)
 	}
 }
 
 func (s *server) Set(ctx context.Context, in *pb.KeyValuePair) (*pb.Value, error) {
+	logger.UnpackReceive("Received Set Request", in.Log, nil, govec.GetDefaultLogOptions())
 	if *amLeader == false {
 		log.Printf("Received : %v [not leader]", in.Key)
 		log.Printf("Value : %v [not leader]", in.Value)
 		go SetToLeader(in.Key, in.Value)
-		return &pb.Value{Value: in.Value}, nil
+		msg := logger.PrepareSend("Sending Value [not leader]", in.Value, govec.GetDefaultLogOptions())
+		return &pb.Value{Value: in.Value, Log: msg}, nil
 	} else {
 		log.Printf("Received : %v", in.Key)
 		log.Printf("Value : %v", in.Value)
 		m[in.Key] = in.Value
-		return &pb.Value{Value: in.Value}, nil
+		msg := logger.PrepareSend("Sending Value", in.Value, govec.GetDefaultLogOptions())
+		return &pb.Value{Value: in.Value, Log: msg}, nil
 	}
 }
 
 func (s *server) Delete(ctx context.Context, in *pb.Key) (*pb.Value, error) {
+	logger.UnpackReceive("Received Delete Request", in.Log, nil, govec.GetDefaultLogOptions())
 	log.Printf("Received : %v", in.Key)
 	log.Printf("Value : %v", m[in.Key])
 	ret := m[in.Key]
 	delete(m, in.Key)
-	return &pb.Value{Value: ret}, nil
+	msg := logger.PrepareSend("Sending Value", ret, govec.GetDefaultLogOptions())
+	return &pb.Value{Value: ret, Log: msg}, nil
 }
 
 func (s *server) GetAll(ctx context.Context, in *pb.Empty) (*pb.KeyValuePairList, error) {
+	logger.UnpackReceive("Received GetAll Request", in.Log, nil, govec.GetDefaultLogOptions())
 	log.Printf("Received : GetAll")
 	var list []*pb.KeyValuePair
 	for k, v := range m {
 		list = append(list, &pb.KeyValuePair{Key: k, Value: v})
 	}
-	return &pb.KeyValuePairList{KeyValuePair: list}, nil
+	msg := logger.PrepareSend("Sending KeyValuePairList", list, govec.GetDefaultLogOptions())
+	return &pb.KeyValuePairList{KeyValuePair: list, Log: msg}, nil
 }
 
 func (s *server) Heartbeat(ctx context.Context, in *pb.KeyValuePairList) (*pb.Empty, error) {
+	logger.UnpackReceive("Received Heartbeat", in.Log, nil, govec.GetDefaultLogOptions())
 	*vote = false
 	*amCandidate = false
 	if leaderPort != int(in.LeaderPort) {
@@ -110,18 +122,23 @@ func (s *server) Heartbeat(ctx context.Context, in *pb.KeyValuePairList) (*pb.Em
 	for _, kv := range in.KeyValuePair {
 		m[kv.Key] = kv.Value // We assume only leader adds new values
 	}
-	return &pb.Empty{}, nil
+	msg := logger.PrepareSend("Sending Empty", nil, govec.GetDefaultLogOptions())
+	return &pb.Empty{Log: msg}, nil
 }
 
 func (s *server) Election(ctx context.Context, in *pb.RequestforVote) (*pb.Vote, error) {
 	log.Printf("Received : Election")
+	
+	logger.UnpackReceive("Received Request for Vote", in.Log, nil,  govec.GetDefaultLogOptions())
 	if *amCandidate == false && *vote == false {
+		msg := logger.PrepareSend("Sending Vote (Accept)", "Accept", govec.GetDefaultLogOptions())
 		*vote = true
 		bomb = rand.Intn(10) + 7
 		*amCandidate = false
-		return &pb.Vote{VoteGranted: true}, nil
+		return &pb.Vote{VoteGranted: true, Log: msg}, nil
 	}
-	return &pb.Vote{VoteGranted: false}, nil
+	msg := logger.PrepareSend("Sending Vote (Reject)", "Reject", govec.GetDefaultLogOptions())
+	return &pb.Vote{VoteGranted: false, Log: msg}, nil
 }
 
 func heartbeat_candidate(port int) {
@@ -138,7 +155,9 @@ func heartbeat_candidate(port int) {
 		c := pb.NewStorageClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		r, err := c.Election(ctx, &pb.RequestforVote{})
+		msg := logger.PrepareSend("Requesting Vote", "Requesting Vote", govec.GetDefaultLogOptions())
+		r, err := c.Election(ctx, &pb.RequestforVote{CandidatePort: int32(port), Log: msg})
+		logger.UnpackReceive("Received Vote", r.Log, nil, govec.GetDefaultLogOptions())
 		if err != nil {
 			log.Fatalf("could not elect: %v", err)
 		}
@@ -172,7 +191,9 @@ func heartbeat_leader(port int) {
 		for k, v := range m {
 			list = append(list, &pb.KeyValuePair{Key: k, Value: v})
 		}
-		c.Heartbeat(ctx, &pb.KeyValuePairList{KeyValuePair: list, LeaderPort: int32(port)})
+		msg := logger.PrepareSend("Sending Heartbeat", list ,govec.GetDefaultLogOptions())
+		r, _ := c.Heartbeat(ctx, &pb.KeyValuePairList{KeyValuePair: list, LeaderPort: int32(port), Log: msg})
+		logger.UnpackReceive("Received Heartbeat", r.Log, nil, govec.GetDefaultLogOptions())
 	}
 
 }
@@ -227,8 +248,10 @@ func sendHeartbeat() {
 // }
 
 func main() {
+	// LogOption.AppendLog = true
 	m["ihate"] = "go"
 	flag.Parse()
+	logger = govec.InitGoVector(fmt.Sprintf("server:%d", *port), fmt.Sprintf("./log/server:%d.log", *port), LogOption)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen : %v", err)

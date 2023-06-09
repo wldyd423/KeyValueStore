@@ -1,0 +1,14 @@
+server:50054 {"server:50054":1}
+Initialization Complete
+server:50054 {"server:50051":6, "server:50052":3, "server:50053":3, "server:50054":2}
+INFO Received Request for Vote
+server:50054 {"server:50051":6, "server:50052":3, "server:50053":3, "server:50054":3}
+INFO Sending Vote (Accept)
+server:50054 {"server:50051":12, "server:50052":5, "server:50053":5, "server:50054":4}
+INFO Received Heartbeat
+server:50054 {"server:50051":12, "server:50052":5, "server:50053":5, "server:50054":5}
+INFO Sending Empty
+server:50054 {"server:50051":18, "server:50052":7, "server:50053":7, "server:50054":6}
+INFO Received Heartbeat
+server:50054 {"server:50051":18, "server:50052":7, "server:50053":7, "server:50054":7}
+INFO Sending Empty
